@@ -157,6 +157,7 @@ impl TWI_I2CState {
         //println!("write address: {}: data: {}", address, data);
         match address {
             0 => {
+                // set the bit rate
                 println!("setting TWI bit rate");
                 let _r = registers::TWBR::from(data);
             }
@@ -165,11 +166,13 @@ impl TWI_I2CState {
                 let _r = registers::TWSR::from(data);
             }
             2 => {
+                // set address
                 self.twar = registers::TWAR::from(data);
                 // TODO: handle the LSB
                 println!("slave address set: {}", u8::from(self.twar) >> 1);
             }
             3 => {
+                // set data
                 self.twdr = registers::TWDR::from(data);
                 println!(
                     "char: {} ; hex: {:X}",
@@ -204,12 +207,14 @@ impl TWI_I2CState {
                     }
 
                     unsafe {
+                        // TODO: use the new InterruptSource API
                         qemu_set_irq(self.irq, 1);
                     };
                     self.twcr.set_twint(true); // Fake TWI
                 }
             }
             _ => {
+                // TODO: better error reporting
                 eprintln!("bad offset");
             }
         }
