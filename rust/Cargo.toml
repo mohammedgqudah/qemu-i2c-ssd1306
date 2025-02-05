@@ -5,6 +5,7 @@ members = [
     "qemu-api",
     "hw/char/pl011",
     "hw/timer/hpet",
+    "hw/i2c/twi_i2c",
 ]
 
 [workspace.lints.rust]

@@ -10,3 +10,5 @@ config ARDUINO
     depends on AVR
     select AVR_ATMEGA_MCU
     select UNIMP
+	select I2C
+	select TWI_I2C

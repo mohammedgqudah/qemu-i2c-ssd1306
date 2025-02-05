@@ -1,0 +1,21 @@
+[package]
+name = "twi_i2c"
+authors = ["Mohammed Alqudah <mohghq@gmail.com>"]
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+qemu_api = { path = "../../../qemu-api" }
+qemu_api_macros = { path = "../../../qemu-api-macros" }
+bilge = { version = "0.2.0" }
+bilge-impl = { version = "0.2.0" }
+
+[build-dependencies]
+cbindgen = "0.24.0"
+
+[lints]
+workspace = true
