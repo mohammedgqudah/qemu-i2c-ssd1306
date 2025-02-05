@@ -1,0 +1,2 @@
+config TWI_I2C
+    bool

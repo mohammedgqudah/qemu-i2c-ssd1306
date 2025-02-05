@@ -27,6 +27,7 @@ enum AtmegaPeripheral {
     GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK, GPIOL,
     USART0, USART1, USART2, USART3,
     TIMER0, TIMER1, TIMER2, TIMER3, TIMER4, TIMER5,
+    TWI,
     PERIFMAX
 };
 
@@ -98,6 +99,7 @@ static const peripheral_cfg dev168_328[PERIFMAX] = {
     [GPIOC]         = {  0x26 },
     [GPIOB]         = {  0x23 },
     [GPIOA]         = {  0x20 },
+    [TWI]           = {  0xb8 },
 };
 
 enum AtmegaIrq {
@@ -117,7 +119,8 @@ enum AtmegaIrq {
         TIMER4_COMPC_IRQ, TIMER4_OVF_IRQ,
     TIMER5_CAPT_IRQ, TIMER5_COMPA_IRQ, TIMER5_COMPB_IRQ,
         TIMER5_COMPC_IRQ, TIMER5_OVF_IRQ,
-    IRQ_COUNT
+    TWI_IRQ,
+    IRQ_COUNT,
 };
 
 #define USART_IRQ_COUNT     3
@@ -168,6 +171,7 @@ static const uint8_t irq168_328[IRQ_COUNT] = {
     [USART1_RXC_IRQ]        = 37,
     [USART1_DRE_IRQ]        = 38,
     [USART1_TXC_IRQ]        = 39,
+    [TWI_IRQ]               = 40,
     [TIMER4_CAPT_IRQ]       = 42,
     [TIMER4_COMPA_IRQ]      = 43,
     [TIMER4_COMPB_IRQ]      = 44,
@@ -347,7 +351,16 @@ static void atmega_realize(DeviceState *dev, Error **errp)
         g_free(devname);
     }
 
-    create_unimplemented_device("avr-twi",          OFFSET_DATA + 0x0b8, 6);
+    /* TWI/I2C */
+    object_initialize_child(OBJECT(dev), "TWI_I2C", &s->twi, "TWI_I2C");
+    sbd = SYS_BUS_DEVICE(&s->twi);
+    sysbus_realize(sbd, &error_abort);
+    //sysbus_connect_irq(sbd, 40, s->twi.irq);
+    // TODO: should i add a sub-region instead?
+    sysbus_mmio_map_overlap(sbd, 0, OFFSET_DATA + 0x0b8, 1);
+    connect_peripheral_irq(mc, sbd, 0, cpudev, TWI_IRQ);
+
+    //create_unimplemented_device("avr-twi",          OFFSET_DATA + 0x0b8, 6);
     create_unimplemented_device("avr-adc",          OFFSET_DATA + 0x078, 8);
     create_unimplemented_device("avr-ext-mem-ctrl", OFFSET_DATA + 0x074, 2);
     create_unimplemented_device("avr-watchdog",     OFFSET_DATA + 0x060, 1);

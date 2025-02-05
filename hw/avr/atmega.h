@@ -16,6 +16,7 @@
 #include "hw/misc/avr_power.h"
 #include "target/avr/cpu.h"
 #include "qom/object.h"
+#include "hw/avr/twi_i2c.h"
 
 #define TYPE_ATMEGA_MCU     "ATmega"
 #define TYPE_ATMEGA168_MCU  "ATmega168"
@@ -46,6 +47,7 @@ struct AtmegaMcuState {
     AVRUsartState usart[USART_MAX];
     AVRTimer16State timer[TIMER_MAX];
     uint64_t xtal_freq_hz;
+    TWI_I2CState twi;
 };
 
 #endif /* HW_AVR_ATMEGA_H */
