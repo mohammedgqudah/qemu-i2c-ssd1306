@@ -2,3 +2,4 @@
 source char/Kconfig
 source timer/Kconfig
 source i2c/Kconfig
+source display/Kconfig

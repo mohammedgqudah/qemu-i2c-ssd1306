@@ -66,3 +66,8 @@ typedef enum memory_order {
 #include "qemu/timer.h"
 #include "exec/address-spaces.h"
 #include "hw/i2c/i2c.h"
+#include "ui/console.h"
+#include "ui/surface.h"
+#include "ui/qemu-pixman.h"
+#include <epoxy/gl.h>
+#include <pixman-1/pixman.h>

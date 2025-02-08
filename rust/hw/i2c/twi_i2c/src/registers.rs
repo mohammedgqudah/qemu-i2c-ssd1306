@@ -50,7 +50,7 @@ pub struct TWSR {
     pub twps1: bool,
     _reserved: bool,
     /// These five bits reflect the status of the TWI logic and the 2-wire
-    /// Serial Bus (Possible statuses are defined below as TW_<STATUS>)
+    /// Serial Bus (Possible statuses are defined below as TW_\<STATUS\>)
     pub status: u5,
 }
 
