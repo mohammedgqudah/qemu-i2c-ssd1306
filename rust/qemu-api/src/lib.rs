@@ -20,6 +20,7 @@ pub mod callbacks;
 pub mod cell;
 pub mod chardev;
 pub mod errno;
+pub mod i2cslave;
 pub mod irq;
 pub mod memory;
 pub mod module;

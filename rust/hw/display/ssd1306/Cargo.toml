@@ -1,0 +1,17 @@
+[package]
+name = "ssd1306"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+qemu_api = { path = "../../../qemu-api" }
+qemu_api_macros = { path = "../../../qemu-api-macros" }
+# TODO: add to meson.build
+bilge = { version = "0.2.0" }
+bilge-impl = { version = "0.2.0" }
+
+[lints]
+workspace = true

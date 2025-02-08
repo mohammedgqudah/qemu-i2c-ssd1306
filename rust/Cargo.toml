@@ -6,6 +6,7 @@ members = [
     "hw/char/pl011",
     "hw/timer/hpet",
     "hw/i2c/twi_i2c",
+    "hw/display/ssd1306",
 ]
 
 [workspace.lints.rust]

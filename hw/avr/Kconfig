@@ -12,3 +12,4 @@ config ARDUINO
     select UNIMP
 	select I2C
 	select TWI_I2C
+	select SSD1306

@@ -81,11 +81,11 @@ impl TWI_I2CState {
             sysbus_init_mmio(sbd, addr_of_mut!(self.iomem));
             sysbus_init_irq(sbd, &mut self.irq);
             self.bus = i2c_init_bus(device, c_str!("i2c-bus").as_ptr());
-            //qemu_api::bindings::i2c_slave_create_simple(
-            //    self.bus,
-            //    c_str!("ssd1306").as_ptr(),
-            //    0x3d_u8,
-            //);
+            qemu_api::bindings::i2c_slave_create_simple(
+                self.bus,
+                c_str!("ssd1306").as_ptr(),
+                0x3d_u8,
+            );
         }
     }
 
@@ -174,11 +174,11 @@ impl TWI_I2CState {
             3 => {
                 // set data
                 self.twdr = registers::TWDR::from(data);
-                println!(
-                    "char: {} ; hex: {:X}",
-                    u8::from(self.twdr) as char,
-                    u8::from(self.twdr)
-                );
+                //println!(
+                //    "char: {} ; hex: {:X}",
+                //    u8::from(self.twdr) as char,
+                //    u8::from(self.twdr)
+                //);
                 self.write_data();
             }
             4 => {
@@ -193,7 +193,7 @@ impl TWI_I2CState {
                 }
 
                 if r.twsto() {
-                    println!("Going to stop");
+                    //println!("Going to stop");
                     self.stop();
                 } else if r.twint() && r.twen() {
                     // TODO: The global interrupt must be enabled SREG (I)
@@ -227,7 +227,7 @@ impl TWI_I2CState {
     fn stop(&mut self) {
         unsafe {
             i2c_end_transfer(self.bus);
-            println!("ended transfer");
+            //println!("ended transfer");
         };
         self.in_transaction = false;
         self.twcr.set_twsto(false); // report that STOP has executed on the bus.
@@ -252,10 +252,9 @@ impl TWI_I2CState {
             self.twcr.set_twsta(false);
             let start_read = self.twdr.twd0(); // write bit
                                                // TODO: do i use start_transfer when attempting to read?
-            println!("start_read: {}", start_read);
+
             match i2c_start_transfer(self.bus, u8::from(self.twdr) >> 1, false) {
                 Ok(()) => {
-                    println!("start transfer worked");
                     self.set_status(if start_read {
                         registers::TW_MR_SLA_ACK
                     } else {
@@ -263,7 +262,7 @@ impl TWI_I2CState {
                     });
                 }
                 Err(()) => {
-                    println!("start transfer failed");
+                    eprintln!("start transfer failed");
                     // TODO: im faking ACK for testing
                     //
                     //self.set_status(if start_read {
@@ -299,7 +298,7 @@ impl TWI_I2CState {
 // TODO: move somewhere else
 // TODO: Should this be safe or unsafe?
 fn i2c_start_transfer(bus: *mut I2CBus, address: u8, is_recv: bool) -> Result<(), ()> {
-    println!("Starting a transfer @ address: {}", address);
+    //println!("Starting a transfer @ address: {}", address);
     let result = unsafe { qemu_api::bindings::i2c_start_transfer(bus, address, is_recv) };
     if result > 0 {
         Err(())
@@ -326,6 +325,7 @@ impl ClassInitImpl<TWI_I2CClass> for TWI_I2CState {
 /// readable/writeable from one thread at any time.
 pub unsafe extern "C" fn twi_i2c_init(obj: *mut Object) {
     unsafe {
+        // TODO: replace debug_assert with new instead of using new_unchecked
         debug_assert!(!obj.is_null());
         let mut state = NonNull::new_unchecked(obj.cast::<TWI_I2CState>());
         state.as_mut().init();

@@ -4071,7 +4071,10 @@ if have_rust
     '--no-prepend-enum-name',
     '--allowlist-file', meson.project_source_root() + '/include/.*',
     '--allowlist-file', meson.project_source_root() + '/.*',
-    '--allowlist-file', meson.project_build_root() + '/.*'
+    '--allowlist-file', meson.project_build_root() + '/.*',
+    # TODO: allowlist pixman.h 
+    '--allowlist-function', 'pixman_image_get_data',
+    '--allowlist-function', 'pixman_image_get_format',
     ]
   if not rustfmt.found()
     if bindgen.version().version_compare('<0.65.0')

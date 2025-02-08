@@ -529,3 +529,26 @@ macro_rules! vmstate_subsections {
         _SUBSECTIONS.0.as_ptr()
     }}
 }
+
+#[macro_export]
+macro_rules! vmstate_i2c_slave {
+    ($field:ident, $struct_name:ty) => {{
+        $crate::bindings::VMStateField {
+            start: 0,
+            num: 0,
+            num_offset: 0,
+            size_offset: 0,
+            struct_version_id: 0,
+            version_id: 1,
+            field_exists: None,
+
+            err_hint: ::core::ptr::null(),
+            info: ::core::ptr::null(),
+            name: c_str!(stringify!($field)).as_ptr(),
+            size: ::core::mem::size_of::<$crate::bindings::I2CSlave>(),
+            vmsd: unsafe { ::core::ptr::addr_of!($crate::bindings::vmstate_i2c_slave) },
+            flags: $crate::bindings::VMStateFlags::VMS_STRUCT,
+            offset: $crate::offset_of!($struct_name, $field),
+        }
+    }};
+}

@@ -1,0 +1,3 @@
+config SSD1306
+    bool
+    depends on I2C
