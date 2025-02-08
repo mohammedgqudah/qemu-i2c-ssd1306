@@ -212,16 +212,6 @@ impl SSD1306State {
                 .expect("display surface pointer is null")
                 .as_ref()
         };
-        //for row in self.gddram.chunks(WIDTH) {
-        //    for c in row {
-        //        print!("{c},");
-        //    }
-        //    println!();
-        //}
-        //println!("--------------");
-        //println!();
-        //panic!();
-
         // Calculate dest width
         //let _dest_width = unsafe {
         //    // PIXMAN_FORMAT_BPP
@@ -246,16 +236,16 @@ impl SSD1306State {
         //};
         //let _dest_width = dest_width * MAGNIFY;
 
-        unsafe {
-            let data = qemu_api::bindings::pixman_image_get_data(surface.image);
-            for y in 0..HEIGHT {
-                for x in 0..WIDTH {
-                    let page = y / 8;
-                    let byte_index = page * WIDTH + x;
-                    let bit_position = y % 8;
-                    let pixel_val = (self.gddram[byte_index] >> bit_position) & 1;
+        let data = unsafe { qemu_api::bindings::pixman_image_get_data(surface.image) };
+        for y in 0..HEIGHT {
+            for x in 0..WIDTH {
+                let page = y / 8;
+                let byte_index = page * WIDTH + x;
+                let bit_position = y % 8;
+                let pixel_val = (self.gddram[byte_index] >> bit_position) & 1;
 
-                    let pixel_offset = y * WIDTH + x; // Map (x, y) to framebuffer index
+                let pixel_offset = y * WIDTH + x; // Map (x, y) to framebuffer index
+                unsafe {
                     *data.add(pixel_offset) = if pixel_val == 0 {
                         0 // Black pixel
                     } else {
@@ -264,44 +254,6 @@ impl SSD1306State {
                 }
             }
         }
-
-        //    let data = unsafe { qemu_api::bindings::pixman_image_get_data(surface.image) };
-        //    for page in self.page_start_address..=self.page_end_address {
-        //        for col in self.column_start_address..=self.column_end_address {
-        //            // Calculate the byte index in GDDRAM
-        //            let byte_index = if self.com_remap_enabled {
-        //                // Reverse page order if COM scan is remapped
-        //                (7 - page) * WIDTH as u8 + col
-        //            } else {
-        //                page * WIDTH as u8 + col
-        //            };
-
-        //            // Get the byte from GDDRAM
-        //            let byte = self.gddram[byte_index as usize];
-
-        //            // Determine the column in the pixel buffer
-        //            let pixel_col = if self.segment_remap_enabled {
-        //                // Reverse column order if segment is remapped
-        //                127 - col
-        //            } else {
-        //                col
-        //            };
-
-        //            // Render each bit in the byte to the pixel buffer
-        //            for bit in 0..8 {
-        //                let pixel_row = page * 8 + bit;
-        //                let pixel_value: bool = (byte >> bit) & 1 == 1;
-        //                let pixel_index = pixel_row as usize * 128 + pixel_col as usize;
-        //                unsafe {
-        //                    *data.add(pixel_index) = if pixel_value {
-        //                        (0xff << (32 - 8)) | 0xff
-        //                    } else {
-        //                        0
-        //                    };
-        //                }
-        //            }
-        //        }
-        //    }
     }
 
     /// # Safety
