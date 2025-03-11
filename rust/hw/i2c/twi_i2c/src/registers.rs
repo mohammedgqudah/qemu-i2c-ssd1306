@@ -16,6 +16,29 @@ pub enum RegisterOffset {
     TWCR = 0x4,
 }
 
+pub struct TWIRegisters {
+    pub twbr: TWBR,
+    pub twsr: TWSR,
+    pub twar: TWAR,
+    pub twdr: TWDR,
+    pub twcr: TWCR,
+    pub in_transaction: bool
+}
+
+impl TWIRegisters {
+    /// Reset the TWI controller registers.
+    ///
+    /// Based on "Register Description" in the ATmega640/1280/1281/2560/2561
+    /// Datasheet.
+    pub fn reset(&mut self) {
+        self.twbr = 0.into();
+        self.twsr = 0b11111000.into();
+        self.twar = 0b11111110.into();
+        self.twdr = 0xFF.into();
+        self.twcr = 0.into();
+    }
+}
+
 #[bitsize(8)]
 #[derive(Clone, Copy, DebugBits, FromBits)]
 /// TWBR – TWI Bit Rate Register.

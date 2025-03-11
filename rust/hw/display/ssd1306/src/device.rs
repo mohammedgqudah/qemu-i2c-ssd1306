@@ -11,7 +11,7 @@ use qemu_api::{
         DisplaySurface, Error, I2CSlave, I2CSlaveClass, Object,
     },
     c_str,
-    qdev::{DeviceImpl, Property},
+    qdev::{DeviceImpl, Property, ResetType, ResettablePhasesImpl},
     qom::{ClassInitImpl, ObjectImpl, ObjectType, ParentField},
     sysbus::SysBusDevice,
     vmstate::VMStateDescription,
@@ -32,16 +32,20 @@ const fn _pixman_format_reshift(val: u32, ofs: u32, num: u32) -> u32 {
 #[derive(Debug)]
 /// The addressing mode used for the GDDRAM.
 pub enum MemoryAddressingMode {
-    /// After the display RAM is read/written, the column address pointer is increased
-    /// automatically by 1. **If the column address pointer reaches column end address, the column address pointer is
-    /// reset to column start address and page address pointer is increased by 1**
+    /// After the display RAM is read/written, the column address pointer is
+    /// increased automatically by 1. **If the column address pointer
+    /// reaches column end address, the column address pointer is
+    /// reset to column start address and page address pointer is increased by
+    /// 1**
     Horizontal,
-    /// After the display RAM is read/written, the page address pointer is increased
-    /// automatically by 1. If the page address pointer reaches the page end address, the page address pointer is reset
+    /// After the display RAM is read/written, the page address pointer is
+    /// increased automatically by 1. If the page address pointer reaches
+    /// the page end address, the page address pointer is reset
     /// to page start address and column address pointer is increased by 1
     Vertical,
-    /// After the display RAM is read/written, the column address pointer is increased
-    /// automatically by 1. **If the column address pointer reaches column end address, the column address pointer is
+    /// After the display RAM is read/written, the column address pointer is
+    /// increased automatically by 1. **If the column address pointer
+    /// reaches column end address, the column address pointer is
     /// reset to column start address and page address pointer is not changed**
     Page,
 }
@@ -49,7 +53,8 @@ pub enum MemoryAddressingMode {
 #[derive(Debug)]
 /// The control byte (D/C# bit).
 ///
-/// This determines whether the current I2C transfer contains a command or GDDRAM data.
+/// This determines whether the current I2C transfer contains a command or
+/// GDDRAM data.
 pub enum DataMode {
     /// The following byte(s) are interpreted as commands.
     /// Corresponds to D/C# = 0 in the control byte.
@@ -87,10 +92,12 @@ pub struct SSD1306State {
     pub params_number: usize,
     /// Graphic Display Data RAM (GDDRAM).
     ///
-    /// The GDDRAM is a bit mapped static RAM holding the bit pattern to be displayed. The size of the RAM is
-    /// **128 x 64 bits** and the RAM is divided into eight pages, from PAGE0 to PAGE7.
+    /// The GDDRAM is a bit mapped static RAM holding the bit pattern to be
+    /// displayed. The size of the RAM is **128 x 64 bits** and the RAM is
+    /// divided into eight pages, from PAGE0 to PAGE7.
     ///
-    /// Each byte in the array directly corresponds to a column in a specific page.
+    /// Each byte in the array directly corresponds to a column in a specific
+    /// page.
     pub gddram: [u8; 128 * 8],
     pub memory_addressing_mode: MemoryAddressingMode,
     pub column_start_address: u8,
@@ -135,7 +142,10 @@ impl DeviceImpl for SSD1306State {
         Some(&crate::device_class::VMSTATE_SSD1306)
     }
     const REALIZE: Option<fn(&Self)> = Some(Self::realize);
-    const RESET: Option<fn(&Self)> = Some(Self::reset);
+}
+
+impl ResettablePhasesImpl for SSD1306State {
+    const HOLD: Option<fn(&Self, ResetType)> = Some(Self::reset_hold);
 }
 
 pub extern "C" fn ssd1306_update_display(opaque: *mut std::os::raw::c_void) {
@@ -193,7 +203,7 @@ impl SSD1306State {
         println!("realize ssd1306");
     }
 
-    pub fn reset(&self) {
+    pub fn reset_hold(&self, _type: ResetType) {
         println!("reset ssd1306");
         // TODO: implement all comments with "RESET"
         // TODO: USE CELL/OR CHECK WHY RESET DOES NOT TAKE A MUTABLE REF
@@ -257,7 +267,6 @@ impl SSD1306State {
     }
 
     /// # Safety
-    ///
     pub unsafe fn i2c_recv(&mut self) -> u8 {
         println!("I2C RECV");
         b'a'
@@ -406,7 +415,10 @@ impl SSD1306State {
             // Note: This command is only for horizontal or vertical addressing mode
             0x22 => {
                 if matches!(self.memory_addressing_mode, MemoryAddressingMode::Page) {
-                    eprintln!("setting the page start and end address is not supported in Page memory addressing.");
+                    eprintln!(
+                        "setting the page start and end address is not supported in Page memory \
+                         addressing."
+                    );
                     return;
                 }
                 if let Some(start) = self.parameters.first() {

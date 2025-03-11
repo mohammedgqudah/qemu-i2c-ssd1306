@@ -1,5 +1,3 @@
-use core::ptr::NonNull;
-
 use qemu_api::{
     bindings::*, c_str, vmstate_fields, vmstate_i2c_slave, vmstate_unused, zeroable::Zeroable,
 };
@@ -31,29 +29,3 @@ pub static VMSTATE_SSD1306: VMStateDescription = VMStateDescription {
     },
     ..Zeroable::ZERO
 };
-
-/// # Safety
-///
-/// We expect the FFI user of this function to pass a valid pointer, that has
-/// the same size as [`SSD1306State`]. We also expect the device is
-/// readable/writeable from one thread at any time.
-pub unsafe extern "C" fn ssd1306_realize(dev: *mut DeviceState, _errp: *mut *mut Error) {
-    unsafe {
-        assert!(!dev.is_null());
-        let mut state = NonNull::new_unchecked(dev.cast::<SSD1306State>());
-        state.as_mut().realize();
-    }
-}
-
-/// # Safety
-///
-/// We expect the FFI user of this function to pass a valid pointer, that has
-/// the same size as [`SSD1306State`]. We also expect the device is
-/// readable/writeable from one thread at any time.
-pub unsafe extern "C" fn ssd1306_reset(dev: *mut DeviceState) {
-    unsafe {
-        assert!(!dev.is_null());
-        let mut state = NonNull::new_unchecked(dev.cast::<SSD1306State>());
-        state.as_mut().reset();
-    }
-}
