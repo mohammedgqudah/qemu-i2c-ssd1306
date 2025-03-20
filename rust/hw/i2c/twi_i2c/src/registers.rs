@@ -22,7 +22,7 @@ pub struct TWIRegisters {
     pub twar: TWAR,
     pub twdr: TWDR,
     pub twcr: TWCR,
-    pub in_transaction: bool
+    pub in_transaction: bool,
 }
 
 impl TWIRegisters {

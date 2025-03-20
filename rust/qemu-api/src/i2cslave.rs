@@ -3,8 +3,7 @@ use std::ffi::CStr;
 use crate::{
     bindings::{self, I2CSlave, I2CSlaveClass},
     prelude::*,
-    qdev::{DeviceClass, DeviceState},
-    qom::ClassInitImpl,
+    qdev::{DeviceImpl, DeviceState},
 };
 
 unsafe impl ObjectType for I2CSlave {
@@ -14,12 +13,11 @@ unsafe impl ObjectType for I2CSlave {
 }
 qom_isa!(I2CSlave: DeviceState, Object);
 
-impl<T> ClassInitImpl<I2CSlaveClass> for T
-where
-    T: ClassInitImpl<DeviceClass>,
-{
-    fn class_init(sdc: &mut I2CSlaveClass) {
-        <T as ClassInitImpl<DeviceClass>>::class_init(&mut sdc.parent_class);
+pub trait I2CSlaveImpl: DeviceImpl + IsA<I2CSlave> {}
+
+impl I2CSlaveClass {
+    pub fn class_init<T: I2CSlaveImpl>(self: &mut I2CSlaveClass) {
+        self.parent_class.class_init::<T>();
     }
 }
 

@@ -7,14 +7,14 @@ use std::{
 use qemu_api::{
     bindings::{
         hwaddr, i2c_end_transfer, i2c_init_bus, i2c_send, memory_region_init_io, qemu_irq,
-        qemu_set_irq, sysbus_init_irq, sysbus_init_mmio, DeviceState, I2CBus, MemoryRegion, Object,
-        SysBusDevice,
+        qemu_set_irq, sysbus_init_irq, sysbus_init_mmio, I2CBus, MemoryRegion,
     },
     c_str,
     cell::BqlRefCell,
-    qdev::{DeviceImpl, Property, ResetType, ResettablePhasesImpl},
-    qom::{ClassInitImpl, ObjectImpl, ObjectType, ParentField},
-    sysbus::SysBusDeviceClass,
+    qdev::{DeviceImpl, DeviceState, Property, ResetType, ResettablePhasesImpl},
+    qom::{IsA, Object, ObjectImpl, ObjectType, ParentField},
+    qom_isa,
+    sysbus::{SysBusDevice, SysBusDeviceImpl},
     vmstate::VMStateDescription,
 };
 use qemu_api_macros::Object;
@@ -34,8 +34,12 @@ pub struct TWIState {
     pub enabled: bool,
 }
 
+trait TWIImpl: SysBusDeviceImpl + IsA<TWIState> {}
+
+impl TWIImpl for TWIState {}
+
 unsafe impl ObjectType for TWIState {
-    type Class = TWI_I2CClass;
+    type Class = TWIClass;
     const TYPE_NAME: &'static CStr = crate::TYPE_TWI_I2C;
 }
 
@@ -44,6 +48,7 @@ impl ObjectImpl for TWIState {
 
     const INSTANCE_INIT: Option<unsafe fn(&mut Self)> = Some(Self::init);
     const INSTANCE_POST_INIT: Option<fn(&Self)> = None;
+    const CLASS_INIT: fn(&mut Self::Class) = Self::Class::class_init::<Self>;
 }
 
 impl DeviceImpl for TWIState {
@@ -55,10 +60,10 @@ impl DeviceImpl for TWIState {
     }
     const REALIZE: Option<fn(&Self)> = Some(Self::realize);
 }
-
 impl ResettablePhasesImpl for TWIState {
     const HOLD: Option<fn(&Self, ResetType)> = Some(Self::reset_hold);
 }
+impl SysBusDeviceImpl for TWIState {}
 
 impl TWIState {
     /// Initializes a pre-allocated, unitialized instance of `TWI_I2CState`.
@@ -72,8 +77,8 @@ impl TWIState {
     pub fn init(&mut self) {
         println!("init twi");
 
-        let device = addr_of_mut!(*self).cast::<DeviceState>();
-        let sbd = addr_of_mut!(*self).cast::<SysBusDevice>();
+        let device = addr_of_mut!(*self).cast::<qemu_api::bindings::DeviceState>();
+        let sbd = addr_of_mut!(*self).cast::<qemu_api::bindings::SysBusDevice>();
         unsafe {
             sysbus_init_mmio(sbd, addr_of_mut!(self.iomem));
             sysbus_init_irq(sbd, &mut self.irq);
@@ -311,14 +316,16 @@ fn i2c_start_transfer(bus: *mut I2CBus, address: u8, is_recv: bool) -> Result<()
     }
 }
 
+qom_isa!(TWIState : SysBusDevice, DeviceState, Object);
+
 #[repr(C)]
-pub struct TWI_I2CClass {
+pub struct TWIClass {
     parent_class: <SysBusDevice as ObjectType>::Class,
 }
 
-impl ClassInitImpl<TWI_I2CClass> for TWIState {
-    fn class_init(klass: &mut TWI_I2CClass) {
-        <Self as ClassInitImpl<SysBusDeviceClass>>::class_init(&mut klass.parent_class);
+impl TWIClass {
+    fn class_init<T: TWIImpl>(&mut self) {
+        self.parent_class.class_init::<T>();
     }
 }
 

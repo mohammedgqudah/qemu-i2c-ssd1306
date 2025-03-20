@@ -31,8 +31,8 @@ pub static VMSTATE_TWI_I2C: VMStateDescription = VMStateDescription {
 // We expect the FFI user of this function to pass a valid pointer, that has
 // the same size as [`TWI_I2CState`]. We also expect the device is
 // readable/writeable from one thread at any time.
-//pub unsafe extern "C" fn twi_i2c_realize(dev: *mut DeviceState, _errp: *mut *mut Error) {
-//    unsafe {
+//pub unsafe extern "C" fn twi_i2c_realize(dev: *mut DeviceState, _errp: *mut
+// *mut Error) {    unsafe {
 //        assert!(!dev.is_null());
 //        let mut state = NonNull::new_unchecked(dev.cast::<TWIState>());
 //        state.as_mut().realize();

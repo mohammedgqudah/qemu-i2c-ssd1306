@@ -7,13 +7,14 @@ use std::{
 use qemu_api::{
     bindings::{
         error_fatal, qdev_new, qdev_prop_set_chr, qemu_console_surface, qemu_irq,
-        sysbus_connect_irq, sysbus_mmio_map, sysbus_realize_and_unref, Chardev, DeviceState,
-        DisplaySurface, Error, I2CSlave, I2CSlaveClass, Object,
+        sysbus_connect_irq, sysbus_mmio_map, sysbus_realize_and_unref, Chardev, DisplaySurface,
+        Error, I2CSlave,
     },
     c_str,
-    qdev::{DeviceImpl, Property, ResetType, ResettablePhasesImpl},
-    qom::{ClassInitImpl, ObjectImpl, ObjectType, ParentField},
-    sysbus::SysBusDevice,
+    i2cslave::I2CSlaveImpl,
+    qdev::{DeviceImpl, DeviceState, Property, ResetType, ResettablePhasesImpl},
+    qom::{IsA, Object, ObjectImpl, ObjectType, ParentField},
+    qom_isa,
     vmstate::VMStateDescription,
 };
 use qemu_api_macros::Object;
@@ -132,8 +133,12 @@ impl ObjectImpl for SSD1306State {
 
     const INSTANCE_INIT: Option<unsafe fn(&mut Self)> = Some(Self::init);
     const INSTANCE_POST_INIT: Option<fn(&Self)> = None;
+    const CLASS_INIT: fn(&mut Self::Class) = Self::Class::class_init::<Self>;
 }
 
+trait SSD1306Impl: I2CSlaveImpl + IsA<SSD1306State> {}
+impl SSD1306Impl for SSD1306State {}
+impl I2CSlaveImpl for SSD1306State {}
 impl DeviceImpl for SSD1306State {
     fn properties() -> &'static [Property] {
         &crate::device_class::SSD1306_PROPERTIES
@@ -187,7 +192,7 @@ impl SSD1306State {
         unsafe {
             // TODO: this was done quickly, make sure it is safe later
             self.console = qemu_api::bindings::graphic_console_init(
-                (self as *mut Self).cast::<DeviceState>(),
+                (self as *mut Self).cast::<qemu_api::bindings::DeviceState>(),
                 0,
                 addr_of_mut!(SSD1306_OPS),
                 (self as *mut Self).cast::<c_void>(),
@@ -658,17 +663,19 @@ pub unsafe extern "C" fn ssd1306_i2c_event(dev: *mut I2CSlave, event: u32) -> i3
     }
 }
 
+qom_isa!(SSD1306State: I2CSlave, DeviceState, Object);
+
 #[repr(C)]
 pub struct SSD1306Class {
     parent_class: <I2CSlave as ObjectType>::Class,
 }
 
-impl ClassInitImpl<SSD1306Class> for SSD1306State {
-    fn class_init(klass: &mut SSD1306Class) {
-        <Self as ClassInitImpl<I2CSlaveClass>>::class_init(&mut klass.parent_class);
+impl SSD1306Class {
+    fn class_init<T: SSD1306Impl>(&mut self) {
+        self.parent_class.class_init::<T>();
         println!("ssd1306 class init");
         unsafe {
-            let a = klass as *mut SSD1306Class;
+            let a = self as *mut SSD1306Class;
             let mut i2c = NonNull::new_unchecked(a.cast::<qemu_api::bindings::I2CSlaveClass>());
             i2c.as_mut().recv = Some(ssd1306_i2c_recv);
             i2c.as_mut().send = Some(ssd1306_i2c_send);
@@ -700,13 +707,13 @@ pub unsafe extern "C" fn ssd1306_create(
     chr: *mut Chardev,
 ) -> *mut DeviceState {
     unsafe {
-        let dev: *mut DeviceState = qdev_new(SSD1306State::TYPE_INFO.name);
-        let sysbus: *mut SysBusDevice = dev.cast::<SysBusDevice>();
+        let dev: *mut qemu_api::bindings::DeviceState = qdev_new(SSD1306State::TYPE_INFO.name);
+        let sysbus = dev.cast::<qemu_api::bindings::SysBusDevice>();
 
         qdev_prop_set_chr(dev, c_str!("chardev").as_ptr(), chr);
         sysbus_realize_and_unref(sysbus, addr_of!(error_fatal) as *mut *mut Error);
         sysbus_mmio_map(sysbus, 0, addr);
         sysbus_connect_irq(sysbus, 0, irq);
-        dev
+        dev as *mut DeviceState
     }
 }
