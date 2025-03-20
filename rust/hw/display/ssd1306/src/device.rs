@@ -264,7 +264,7 @@ impl SSD1306State {
                     *data.add(pixel_offset) = if pixel_val == 0 {
                         0 // Black pixel
                     } else {
-                        (0xff << (32 - 8)) | 0xff // RGBA (Blue pixel)
+                        0xffffffff // Color in ARGB (Blue pixel) 
                     };
                 }
             }
